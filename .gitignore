@@ -23,3 +23,6 @@ run
 # 로컬 비밀 정보 (배포 접속 정보 등은 ~/.gradle/gradle.properties에 둔다)
 local.properties
 *.secret
+
+# 서버 실행 로그
+logs/

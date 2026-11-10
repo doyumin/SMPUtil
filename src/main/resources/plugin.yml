@@ -1,0 +1,42 @@
+name: SMPUtil
+description: $description
+prefix: SMPUtil
+version: '${version}'
+
+main: dev.doyu.smputil.SMPUtilPlugin
+api-version: '26.3'
+load: POSTWORLD
+
+authors: [ doyumin ]
+
+permissions:
+  smputil.nick.self:
+    description: Allows changing your own nickname
+    default: op
+  smputil.nick.others:
+    description: Allows setting other players' nicknames
+    default: op
+  smputil.home:
+    description: Allows using homes
+    default: true
+  smputil.spawn:
+    description: Allows teleporting to spawn
+    default: true
+  smputil.tpa:
+    description: Allows sending and answering teleport requests
+    default: true
+  smputil.trade:
+    description: Allows trading with other players
+    default: true
+  smputil.syncadv:
+    description: Allows checking whether advancements are shared
+    default: true
+  smputil.syncadv.toggle:
+    description: Allows turning advancement sharing on and off
+    default: op
+  smputil.players:
+    description: Allows listing online players
+    default: true
+  smputil.players.uuid:
+    description: Shows player UUIDs in the player list
+    default: op
