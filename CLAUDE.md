@@ -16,6 +16,8 @@
 - Kotlin 2.4.21, JDK 25 툴체인, Paper API 26.3, Gradle 버전 카탈로그(`gradle/libs.versions.toml`), shadow, run-paper. Econet과 같은 버전을 쓴다.
 - 패키지 `dev.doyu.smputil`. 모듈은 하나로 시작한다.
 - 의존성은 버전 카탈로그로만 추가한다.
+- Econet과 다른 점 하나: paper-api 대신 **paperweight-userdev의 26.3 dev bundle**을 쓴다(`paper-dev-bundle` 버전은 빌드 번호까지 고정). 닉네임 패킷에 서버 내부 클래스가 필요해서다(DESIGN 3장). dev bundle에 paper-api가 들어 있다.
+  - 첫 빌드는 Mojang 서버 jar를 받아 디컴파일하므로 1~2분 걸린다. 네트워크에 `piston-meta.mojang.com`, `piston-data.mojang.com`, `libraries.minecraft.net`, `repo.papermc.io`가 필요하다.
 
 ```
 ./gradlew build
@@ -70,3 +72,25 @@
 ## 테스트
 
 - `kotlin.test`. 시간이 걸리는 규칙(요청 만료 등)은 `Clock`을 주입해 테스트한다.
+- Bukkit과 분리한 순수 로직: `RequestBoard`(요청·만료), `HomeBook`, `TradeSession`(아이템 총합 무작위 테스트), `missingCriteria`, `NicknameRules`, `withShownName`, `readSettings`.
+
+## 구현 메모
+
+### 실제 서버에서 확인 (Paper 26.3 build 246, `runServer`, 콘솔)
+
+- 플러그인이 오류 없이 켜지고 꺼진다. 11개 명령어와 한글 별칭(`/접속자`, `/도전과제공유` 등)이 콘솔에서 실행된다.
+- `/syncadv on`이 `state.yml`에 저장된다.
+- 클라이언트 접속 테스트는 아직 못 했다(이름표·탭 목록·거래 화면). mineflayer(minecraft-data)가 26.1까지만 지원한다.
+
+### Paper 26.3 서버 코드에서 확인
+
+- 패킷의 플레이어 이름은 `ByteBufCodecs.PLAYER_NAME = stringUtf8(16)`이다. 16자(UTF-16 단위)를 넘으면 **인코딩에서 예외가 나 받는 사람의 접속이 끊긴다.** 그래서 `nickname.max-length`는 16을 넘으면 시작 시 실패한다. 한글 16자는 48바이트라 바이트 상한(16×3) 안에 든다.
+- `PlayerJoinEvent`는 `PlayerList.placeNewPlayer`에서 플레이어 정보 패킷(`createPlayerInitializing`)보다 먼저 불린다. 그래서 LOWEST에서 닉네임을 불러오고 파이프라인을 끼우면 첫 패킷부터 닉네임으로 나간다.
+- 플레이어 정보 패킷은 묶음(bundle) 패킷에 담겨 나가지 않는다. `NicknameRewriter`는 묶음을 열어 보지 않는다.
+- 채팅은 `ChatProcessor`가 Adventure `displayName`을 쓴다. 사망 메시지는 `CombatTracker`가 진짜 이름(`getDisplayName` → 프로필 이름)으로 만들므로 이벤트에서 바꾼다. 입장·퇴장 메시지도 같다.
+- `getRespawnLocation(true)`는 `findRespawnAndUseSpawnBlock(..., false)`라 리스폰 정박기 충전을 쓰지 않는다.
+
+### 닉네임 방식의 예상되는 한계 (클라이언트 동작이라 아직 확인하지 못함)
+
+- 클라이언트는 스코어보드 팀 소속을 프로필 이름으로 찾는다. 닉네임이 있는 플레이어는 다른 사람 화면에서 팀 색·접두사가 적용되지 않는다.
+- 바닐라 명령어의 플레이어 이름 자동완성은 클라이언트가 탭 목록의 프로필 이름(=닉네임)으로 만든다. `/tp 홍길동`처럼 제안되지만 서버는 진짜 이름만 받는다. SMPUtil 명령어는 둘 다 받는다.
