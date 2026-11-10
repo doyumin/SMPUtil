@@ -1,0 +1,19 @@
+[versions]
+kotlin = "2.4.21"
+
+paper-api = "26.3.build.+"
+paper-dev-bundle = "26.3.build.246-stable"
+minecraft = "26.3"
+
+shadow = "9.6.1"
+run-task = "3.1.0"
+paperweight = "2.0.0-beta.24"
+
+[libraries]
+paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper-api" }
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
+
+[plugins]
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
+run-paper = { id = "xyz.jpenilla.run-paper", version.ref = "run-task" }
+paperweight-userdev = { id = "io.papermc.paperweight.userdev", version.ref = "paperweight" }
