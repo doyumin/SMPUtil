@@ -24,6 +24,26 @@
 ./gradlew runServer
 ```
 
+### 배포 (`./gradlew deploy`)
+
+Econet 저장소(master)의 배포 파이프라인과 같다. 구현은 `buildSrc/src/main/kotlin/econet/deploy/`, 태스크 등록은 루트 `build.gradle.kts` 맨 아래.
+
+- `deployUpload`(shadowJar → SFTP로 `plugins/`) → `deployRestart`(Pterodactyl Client API `power` = restart). 둘을 묶은 것이 `deploy`.
+- 접속 정보는 저장소에 두지 않는다. `~/.gradle/gradle.properties` 또는 환경 변수(`econet.sftp.host` → `ECONET_SFTP_HOST`)에서 읽고, 없으면 실행할 때 키 이름을 밝혀 실패한다.
+  - 이유: 비밀번호·API 키가 커밋되지 않게. 배포하지 않는 빌드는 설정 없이 돌아야 한다.
+- 설정 키 이름은 `econet.sftp.*`, `econet.panel.*` 그대로다. SMPUtil로 바꾸지 않는다.
+  - 이유: Econet·SMPUtil·AdminUtil이 같은 서버를 쓰므로 접속 정보 파일 하나를 세 프로젝트가 공유한다. `buildSrc`의 패키지 이름(`econet.deploy`)도 같은 이유로 그대로 두었다. 세 저장소의 배포 코드를 서로 복사해 올 때 차이가 이름뿐이게 하려는 것이다.
+- SFTP 연산만 쓴다(sshj, 순수 Java). Pterodactyl은 셸·scp를 열어 주지 않는다. sshj 버전은 버전 카탈로그에 있다.
+- 서버의 파일명은 버전 없이 `rootProject.name` 기준 `SMPUtil.jar`로 고정한다.
+  - 이유: 버전이 올라도 같은 이름을 덮어쓰면 되고, 버전이 다른 jar가 둘 남아 플러그인이 두 번 로드되는 일이 없다.
+- 순서: `SMPUtil.jar.uploading`으로 업로드 → 크기 확인 → **이 플러그인의 옛 파일**(`SMPUtil.jar`, 옛 `SMPUtil-*.jar`, `*.jar.uploading`)만 삭제 → 최종 이름으로 rename.
+  - 이유: 업로드가 실패해도 돌아가던 jar가 남고, 임시 파일은 `.jar`로 끝나지 않아 서버가 반쯤 쓴 파일을 읽지 않는다.
+  - **`Econet.jar`, `AdminUtil.jar` 같은 형제 플러그인 파일은 절대 지우지 않는다.** 이름 접두사까지 정확히 맞춰 거르고(`ownedRemoteFiles`), 이 규칙은 `DeploySettingsTest`에서 확인한다.
+- 서버 신원은 `~/.ssh/known_hosts` 또는 `econet.sftp.hostKey`(SHA256 지문)로 확인한다. 둘 다 없으면 서버 지문을 알려 주며 멈춘다.
+  - 이유: 확인 없이 접속하면 가로챈 서버에 비밀번호를 넘길 수 있다.
+- 인증은 키(`keyPath`) → 비밀번호 순으로 시도한다. 패널 URL은 https만 허용한다(로컬 시험 서버 제외).
+- buildSrc의 테스트는 `./gradlew build`에 묶여 있지 않다(실제로 확인했다). 배포 코드를 고치면 `./gradlew -p buildSrc test`를 따로 돌린다.
+
 ## 비밀 정보 (절대 규칙)
 
 - 서버 주소, 계정, 비밀번호, 토큰을 **저장소 안의 어떤 파일에도** 적지 않는다. 빌드 스크립트, 설정 예시, 테스트, 주석, 커밋 메시지 모두 포함.
