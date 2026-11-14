@@ -28,8 +28,8 @@ sealed interface SuggestResult {
 class SuggestionBook(
     initial: List<Suggestion>,
     private val clock: Clock,
-    private val maxLength: Int,
-    private val cooldown: Duration,
+    private val maxLength: () -> Int,
+    private val cooldown: () -> Duration,
 ) {
     private val suggestions = initial.toMutableList()
     private var nextId = (initial.maxOfOrNull { it.id } ?: 0) + 1
@@ -38,7 +38,8 @@ class SuggestionBook(
         // 줄바꿈·연속 공백은 Discord 메시지와 YAML을 어지럽히므로 한 칸으로 줄인다.
         val text = rawText.trim().replace(WHITESPACE_RUN, " ")
         if (text.isEmpty()) return SuggestResult.Empty
-        if (text.length > maxLength) return SuggestResult.TooLong(maxLength)
+        val limit = maxLength()
+        if (text.length > limit) return SuggestResult.TooLong(limit)
 
         cooldownLeft(author)?.let { return SuggestResult.Cooldown(it) }
 
@@ -50,7 +51,7 @@ class SuggestionBook(
     /** 입력창을 열기 전에 확인해, 길게 써 놓고 거절당하는 일이 없게 한다. */
     fun cooldownLeft(author: UUID): Duration? {
         val last = suggestions.lastOrNull { it.author == author } ?: return null
-        return (cooldown - Duration.between(last.createdAt, clock.instant())).takeIf { it.isPositive }
+        return (cooldown() - Duration.between(last.createdAt, clock.instant())).takeIf { it.isPositive }
     }
 
     fun snapshot(): List<Suggestion> = suggestions.toList()

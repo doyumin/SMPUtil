@@ -18,14 +18,13 @@ class SuggestCommand(
     private val plugin: Plugin,
     private val book: SuggestionBook,
     private val file: SuggestionFile,
-    /** null이면 디스코드 알림을 쓰지 않는다. */
-    private val webhook: DiscordWebhook?,
+    private val webhook: DiscordWebhook,
     private val nicknames: Nicknames,
-    private val maxLength: Int,
+    private val maxLength: () -> Int,
     private val logger: Logger,
 ) : BasicCommand {
     /** 콜백의 사용 횟수·만료가 창마다 따로 세어지도록 열 때마다 새로 만든다. 하나를 같이 쓰면 첫 제출 뒤 모두의 [보내기]가 죽는다. */
-    private fun newDialog() = suggestionDialog(maxLength) { audience, text ->
+    private fun newDialog() = suggestionDialog(maxLength()) { audience, text ->
         // 창의 버튼 콜백이 어느 스레드에서 오든 게임 상태는 서버 스레드에서만 건드린다.
         val player = audience as? Player ?: return@suggestionDialog
         plugin.server.scheduler.runTask(plugin, Runnable { if (player.isOnline) submit(player, text) })
@@ -67,7 +66,7 @@ class SuggestCommand(
             // 메모리에는 남아 있으니 알림은 보내고, 저장 실패는 운영자가 알 수 있게 크게 남긴다.
             logger.log(Level.SEVERE, "Could not save suggestions.yml", e)
         }
-        webhook?.announce(suggestion)
+        webhook.announce(suggestion)
         player.sendMessage(Component.text("제안 #${suggestion.id}을(를) 받았습니다. 고맙습니다!", NamedTextColor.GREEN))
     }
 

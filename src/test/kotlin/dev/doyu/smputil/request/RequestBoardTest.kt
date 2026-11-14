@@ -19,7 +19,7 @@ class RequestBoardTest {
     }
 
     private val clock = MutableClock(Instant.parse("2026-11-10T00:00:00Z"))
-    private val board = RequestBoard(clock, Duration.ofSeconds(15))
+    private val board = RequestBoard(clock) { Duration.ofSeconds(15) }
     private val alice = UUID.randomUUID()
     private val bob = UUID.randomUUID()
     private val carol = UUID.randomUUID()

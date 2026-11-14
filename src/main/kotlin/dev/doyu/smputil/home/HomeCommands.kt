@@ -18,10 +18,12 @@ const val HOME_PERMISSION = "smputil.home"
 class Homes(
     private val book: HomeBook,
     private val file: HomeFile,
-    val settings: HomeSettings,
+    private val currentSettings: () -> HomeSettings,
     private val server: Server,
     private val logger: Logger,
 ) {
+    val settings: HomeSettings get() = currentSettings()
+
     fun set(player: Player, name: String): SetHomeResult {
         val location = player.location
         val result = book.set(player.uniqueId, name, HomePoint(location.world.name, location.x, location.y, location.z, location.yaw, location.pitch), settings.maxHomes)

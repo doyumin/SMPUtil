@@ -38,7 +38,7 @@ class Trades(
     private val board: RequestBoard,
     private val nicknames: Nicknames,
     /** null이면 거리 제한이 없다. */
-    private val maxDistance: Double?,
+    private val maxDistance: () -> Double?,
 ) : Listener {
     private val uiTag = NamespacedKey(plugin, "trade_ui")
     private val screens = mutableMapOf<UUID, TradeScreen>()
@@ -237,11 +237,11 @@ class Trades(
     }
 
     private fun closeEnough(a: Player, b: Player): Boolean {
-        val limit = maxDistance ?: return true
+        val limit = maxDistance() ?: return true
         return a.world == b.world && a.location.distance(b.location) <= limit
     }
 
-    private fun tooFar(): Component = Component.text("거래하려면 ${maxDistance?.toInt()}블록 안에 있어야 합니다.", NamedTextColor.RED)
+    private fun tooFar(): Component = Component.text("거래하려면 ${maxDistance()?.toInt()}블록 안에 있어야 합니다.", NamedTextColor.RED)
 
     private fun notifyExpired(request: PendingRequest) {
         val targetName = server.getPlayer(request.to)?.let(nicknames::shownName) ?: "상대"

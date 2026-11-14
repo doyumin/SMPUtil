@@ -21,12 +21,17 @@ fun parseWebhookUrl(value: String): URI {
 }
 
 /** 새 제안을 디스코드 채널에 알린다. 웹훅 주소 자체가 비밀이므로 로그에 남기지 않는다. */
-class DiscordWebhook(private val url: URI, private val logger: Logger) {
+class DiscordWebhook(
+    /** null이면 알림을 쓰지 않는다. 다시 읽기로 주소가 바뀌어도 따라가도록 보낼 때마다 읽는다. */
+    private val url: () -> URI?,
+    private val logger: Logger,
+) {
     private val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()
 
     /** 서버 틱을 막지 않게 비동기로 보낸다. 실패해도 제안은 이미 저장돼 있다. */
     fun announce(suggestion: Suggestion) {
-        val request = HttpRequest.newBuilder(url)
+        val target = url() ?: return
+        val request = HttpRequest.newBuilder(target)
             .timeout(Duration.ofSeconds(10))
             .header("Content-Type", "application/json; charset=utf-8")
             .POST(HttpRequest.BodyPublishers.ofString(discordPayload(suggestion)))
