@@ -28,13 +28,3 @@ trade:
   expire-seconds: 15
   # 거래할 수 있는 최대 거리(블록). 0이면 제한 없음(다른 월드끼리도 된다). 임시값.
   max-distance: 0
-
-suggestion:
-  # 제안 한 건의 최대 글자 수
-  max-length: 200
-  # 같은 사람이 다음 제안을 보낼 수 있을 때까지의 시간(초). 도배 방지. 0이면 제한 없음.
-  cooldown-seconds: 60
-  # 새 제안을 알릴 디스코드 웹훅 주소. 비우면 알리지 않는다.
-  # 이 주소를 아는 사람은 누구나 그 채널에 글을 쓸 수 있으므로 비밀이다: 저장소에는 절대 적지 말고,
-  # 서버의 plugins/SMPUtil/config.yml 에만 적는다.
-  discord-webhook-url: ""
