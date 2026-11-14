@@ -21,6 +21,7 @@ import dev.doyu.smputil.suggestion.DiscordWebhook
 import dev.doyu.smputil.suggestion.SuggestCommand
 import dev.doyu.smputil.suggestion.SuggestionBook
 import dev.doyu.smputil.suggestion.SuggestionFile
+import dev.doyu.smputil.suggestion.SuggestionReminder
 import dev.doyu.smputil.teleport.SpawnCommand
 import dev.doyu.smputil.teleport.TeleportRequests
 import dev.doyu.smputil.teleport.Teleporter
@@ -74,6 +75,12 @@ class SMPUtilPlugin : JavaPlugin() {
             trades.sweepExpired()
         }, TICKS_PER_SECOND, TICKS_PER_SECOND)
 
+        settings.suggestion.reminderInterval?.let { interval ->
+            val reminder = SuggestionReminder(server)
+            val ticks = interval.seconds * TICKS_PER_SECOND
+            server.scheduler.runTaskTimer(this, { _ -> reminder.remind() }, ticks, ticks)
+        }
+
         lifecycleManager.registerEventHandler(LifecycleEvents.COMMANDS) { event ->
             val commands = event.registrar()
             commands.register("nick", "한글 닉네임을 정합니다.", listOf("닉네임"), NickCommand(nicknames, NicknameRules(settings.nickname), lookup))
@@ -87,7 +94,7 @@ class SMPUtilPlugin : JavaPlugin() {
             commands.register("trade", "다른 플레이어와 거래합니다.", listOf("거래"), TradeCommand(trades, lookup))
             commands.register("syncadv", "도전과제 공유 상태를 보거나 켜고 끕니다.", listOf("도전과제공유"), SyncAdvancementCommand(advancementSync))
             commands.register("players", "접속자 목록을 봅니다.", listOf("접속자"), PlayersCommand(server, nicknames))
-            commands.register("suggest", "서버에 바라는 것을 제안합니다.", listOf("제안"), SuggestCommand(suggestionBook, suggestionFile, discordWebhook, nicknames, logger))
+            commands.register("suggest", "서버에 바라는 것을 제안합니다.", listOf("제안"), SuggestCommand(this, suggestionBook, suggestionFile, discordWebhook, nicknames, settings.suggestion.maxLength, logger))
         }
     }
 
