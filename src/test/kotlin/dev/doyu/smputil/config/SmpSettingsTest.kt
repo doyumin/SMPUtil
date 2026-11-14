@@ -26,6 +26,19 @@ class SmpSettingsTest {
         assertEquals(Duration.ofSeconds(15), settings.tpaExpiry)
         assertEquals(Duration.ofSeconds(15), settings.tradeExpiry)
         assertNull(settings.tradeMaxDistance)
+        assertEquals(200, settings.suggestion.maxLength)
+        assertEquals(Duration.ofSeconds(60), settings.suggestion.cooldown)
+        assertNull(settings.suggestion.discordWebhook)
+    }
+
+    @Test
+    fun `webhook address is read but never echoed in an error`() {
+        val ok = bundledConfig().apply { set("suggestion.discord-webhook-url", "https://discord.com/api/webhooks/1/token") }
+        assertEquals("https://discord.com/api/webhooks/1/token", readSettings(ok).suggestion.discordWebhook.toString())
+
+        val bad = bundledConfig().apply { set("suggestion.discord-webhook-url", "https://example.com/secret-token") }
+        val error = assertFailsWith<IllegalArgumentException> { readSettings(bad) }
+        assertTrue("secret-token" !in error.message.orEmpty())
     }
 
     @Test
@@ -38,7 +51,7 @@ class SmpSettingsTest {
 
     @Test
     fun `wrong values fail instead of falling back to defaults`() {
-        val cases = mapOf(
+        val cases = listOf(
             "nickname.min-length" to 0,
             "nickname.allowed" to "[",
             "home.enabled" to "yes",
@@ -47,6 +60,10 @@ class SmpSettingsTest {
             "tpa.expire-seconds" to 0,
             "trade.expire-seconds" to "soon",
             "trade.max-distance" to -5,
+            "suggestion.max-length" to 0,
+            "suggestion.max-length" to 1001,
+            "suggestion.cooldown-seconds" to -1,
+            "suggestion.discord-webhook-url" to "https://example.com/hook",
         )
         for ((path, value) in cases) {
             val config = bundledConfig().apply { set(path, value) }
