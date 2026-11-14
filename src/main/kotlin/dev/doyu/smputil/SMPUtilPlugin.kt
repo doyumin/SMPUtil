@@ -17,6 +17,10 @@ import dev.doyu.smputil.nickname.Nicknames
 import dev.doyu.smputil.players.PlayerLookup
 import dev.doyu.smputil.players.PlayersCommand
 import dev.doyu.smputil.request.RequestBoard
+import dev.doyu.smputil.suggestion.DiscordWebhook
+import dev.doyu.smputil.suggestion.SuggestCommand
+import dev.doyu.smputil.suggestion.SuggestionBook
+import dev.doyu.smputil.suggestion.SuggestionFile
 import dev.doyu.smputil.teleport.SpawnCommand
 import dev.doyu.smputil.teleport.TeleportRequests
 import dev.doyu.smputil.teleport.Teleporter
@@ -49,7 +53,10 @@ class SMPUtilPlugin : JavaPlugin() {
         val teleportRequests = TeleportRequests(RequestBoard(clock, settings.tpaExpiry), server, nicknames, teleporter)
         val trades = Trades(this, server, RequestBoard(clock, settings.tradeExpiry), nicknames, settings.tradeMaxDistance)
         this.trades = trades
-        val advancementSync = AdvancementSync(this, server, dataFolder.resolve("state.yml"))
+        val suggestionFile = SuggestionFile(dataFolder.resolve("suggestions.yml"))
+        val suggestionBook = SuggestionBook(suggestionFile.load(), clock, settings.suggestion.maxLength, settings.suggestion.cooldown)
+        val discordWebhook = settings.suggestion.discordWebhook?.let { DiscordWebhook(it, logger) }
+        val advancementSync =AdvancementSync(this, server, dataFolder.resolve("state.yml"))
 
         // 이미 접속해 있는 플레이어(서버가 켜진 채 플러그인만 올라온 경우)에게도 닉네임을 적용한다.
         for (player in server.onlinePlayers) {
@@ -80,6 +87,7 @@ class SMPUtilPlugin : JavaPlugin() {
             commands.register("trade", "다른 플레이어와 거래합니다.", listOf("거래"), TradeCommand(trades, lookup))
             commands.register("syncadv", "도전과제 공유 상태를 보거나 켜고 끕니다.", listOf("도전과제공유"), SyncAdvancementCommand(advancementSync))
             commands.register("players", "접속자 목록을 봅니다.", listOf("접속자"), PlayersCommand(server, nicknames))
+            commands.register("suggest", "서버에 바라는 것을 제안합니다.", listOf("제안"), SuggestCommand(suggestionBook, suggestionFile, discordWebhook, nicknames, logger))
         }
     }
 
