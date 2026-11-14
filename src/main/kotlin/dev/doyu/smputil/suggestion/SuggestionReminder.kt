@@ -10,11 +10,11 @@ import org.bukkit.Server
 class SuggestionReminder(private val server: Server) {
     private val message = Component.text("불편한 점이나 바라는 것이 있나요? ", NamedTextColor.GRAY)
         .append(
-            Component.text("/제안 <내용>", NamedTextColor.GREEN)
-                .hoverEvent(HoverEvent.showText(Component.text("눌러서 입력")))
-                .clickEvent(ClickEvent.suggestCommand("/제안 ")),
+            Component.text("/제안", NamedTextColor.GREEN)
+                .hoverEvent(HoverEvent.showText(Component.text("눌러서 제안하기")))
+                .clickEvent(ClickEvent.runCommand("/제안")),
         )
-        .append(Component.text(" 으로 남겨 주세요.", NamedTextColor.GRAY))
+        .append(Component.text(" 을 눌러 남겨 주세요.", NamedTextColor.GRAY))
 
     fun remind() {
         // 제안을 못 하는 사람에게 쓸 수 없는 명령어를 안내하지 않는다.
