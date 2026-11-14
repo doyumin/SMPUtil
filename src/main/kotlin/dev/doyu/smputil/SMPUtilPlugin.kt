@@ -2,6 +2,8 @@ package dev.doyu.smputil
 
 import dev.doyu.smputil.advancement.AdvancementSync
 import dev.doyu.smputil.advancement.SyncAdvancementCommand
+import dev.doyu.smputil.config.CurrentSettings
+import dev.doyu.smputil.config.ReloadConfigCommand
 import dev.doyu.smputil.config.readSettings
 import dev.doyu.smputil.home.DeleteHomeCommand
 import dev.doyu.smputil.home.HomeBook
@@ -32,15 +34,18 @@ import dev.doyu.smputil.trade.TradeCommand
 import dev.doyu.smputil.trade.Trades
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents
 import org.bukkit.plugin.java.JavaPlugin
+import org.bukkit.scheduler.BukkitTask
 import java.time.Clock
 
 class SMPUtilPlugin : JavaPlugin() {
     private var trades: Trades? = null
     private var nicknameChannels: NicknameChannels? = null
+    private var reminderTask: BukkitTask? = null
 
     override fun onEnable() {
         saveDefaultConfig()
-        val settings = readSettings(config)
+        // 시작할 때 설정이 틀리면 여기서 예외가 나 플러그인이 켜지지 않는다.
+        val current = CurrentSettings(readSettings(config))
         val clock = Clock.systemUTC()
         dataFolder.mkdirs()
 
@@ -48,16 +53,16 @@ class SMPUtilPlugin : JavaPlugin() {
         val channels = NicknameChannels(nicknames, logger)
         nicknameChannels = channels
         val lookup = PlayerLookup(server, nicknames)
-        val teleporter = Teleporter(this, settings.teleportWarmup)
+        val teleporter = Teleporter(this) { current.value.teleportWarmup }
         val homeFile = HomeFile(dataFolder.resolve("homes.yml"))
-        val homes = Homes(HomeBook(homeFile.load()), homeFile, settings.home, server, logger)
-        val teleportRequests = TeleportRequests(RequestBoard(clock, settings.tpaExpiry), server, nicknames, teleporter)
-        val trades = Trades(this, server, RequestBoard(clock, settings.tradeExpiry), nicknames, settings.tradeMaxDistance)
+        val homes = Homes(HomeBook(homeFile.load()), homeFile, { current.value.home }, server, logger)
+        val teleportRequests = TeleportRequests(RequestBoard(clock) { current.value.tpaExpiry }, server, nicknames, teleporter)
+        val trades = Trades(this, server, RequestBoard(clock) { current.value.tradeExpiry }, nicknames) { current.value.tradeMaxDistance }
         this.trades = trades
         val suggestionFile = SuggestionFile(dataFolder.resolve("suggestions.yml"))
-        val suggestionBook = SuggestionBook(suggestionFile.load(), clock, settings.suggestion.maxLength, settings.suggestion.cooldown)
-        val discordWebhook = settings.suggestion.discordWebhook?.let { DiscordWebhook(it, logger) }
-        val advancementSync =AdvancementSync(this, server, dataFolder.resolve("state.yml"))
+        val suggestionBook = SuggestionBook(suggestionFile.load(), clock, { current.value.suggestion.maxLength }, { current.value.suggestion.cooldown })
+        val discordWebhook = DiscordWebhook({ current.value.suggestion.discordWebhook }, logger)
+        val advancementSync = AdvancementSync(this, server, dataFolder.resolve("state.yml"))
 
         // 이미 접속해 있는 플레이어(서버가 켜진 채 플러그인만 올라온 경우)에게도 닉네임을 적용한다.
         for (player in server.onlinePlayers) {
@@ -75,15 +80,17 @@ class SMPUtilPlugin : JavaPlugin() {
             trades.sweepExpired()
         }, TICKS_PER_SECOND, TICKS_PER_SECOND)
 
-        settings.suggestion.reminderInterval?.let { interval ->
-            val reminder = SuggestionReminder(server)
-            val ticks = interval.seconds * TICKS_PER_SECOND
-            server.scheduler.runTaskTimer(this, { _ -> reminder.remind() }, ticks, ticks)
+        val reminder = SuggestionReminder(server)
+        scheduleReminder(current, reminder)
+        val reloadSettings = {
+            reloadConfig()
+            current.replaceWith(config)
+            scheduleReminder(current, reminder)
         }
 
         lifecycleManager.registerEventHandler(LifecycleEvents.COMMANDS) { event ->
             val commands = event.registrar()
-            commands.register("nick", "한글 닉네임을 정합니다.", listOf("닉네임"), NickCommand(nicknames, NicknameRules(settings.nickname), lookup))
+            commands.register("nick", "한글 닉네임을 정합니다.", listOf("닉네임"), NickCommand(nicknames, { NicknameRules(current.value.nickname) }, lookup))
             commands.register("home", "집으로 이동합니다.", listOf("집"), HomeCommand(homes, teleporter))
             commands.register("sethome", "지금 위치를 집으로 정합니다.", listOf("집설정"), SetHomeCommand(homes))
             commands.register("delhome", "집을 지웁니다.", listOf("집삭제"), DeleteHomeCommand(homes))
@@ -94,7 +101,18 @@ class SMPUtilPlugin : JavaPlugin() {
             commands.register("trade", "다른 플레이어와 거래합니다.", listOf("거래"), TradeCommand(trades, lookup))
             commands.register("syncadv", "도전과제 공유 상태를 보거나 켜고 끕니다.", listOf("도전과제공유"), SyncAdvancementCommand(advancementSync))
             commands.register("players", "접속자 목록을 봅니다.", listOf("접속자"), PlayersCommand(server, nicknames))
-            commands.register("suggest", "서버에 바라는 것을 제안합니다.", listOf("제안"), SuggestCommand(this, suggestionBook, suggestionFile, discordWebhook, nicknames, settings.suggestion.maxLength, logger))
+            commands.register("suggest", "서버에 바라는 것을 제안합니다.", listOf("제안"), SuggestCommand(this, suggestionBook, suggestionFile, discordWebhook, nicknames, { current.value.suggestion.maxLength }, logger))
+            commands.register("smpreload", "config.yml만 다시 읽습니다.", listOf("설정리로드"), ReloadConfigCommand(reloadSettings, logger))
+        }
+    }
+
+    /** 간격이 바뀔 수 있어 다시 읽을 때마다 이전 타이머를 끊고 새로 건다. 0이면 걸지 않는다. */
+    private fun scheduleReminder(current: CurrentSettings, reminder: SuggestionReminder) {
+        reminderTask?.cancel()
+        val interval = current.value.suggestion.reminderInterval
+        reminderTask = interval?.let {
+            val ticks = it.seconds * TICKS_PER_SECOND
+            server.scheduler.runTaskTimer(this, Runnable { reminder.remind() }, ticks, ticks)
         }
     }
 

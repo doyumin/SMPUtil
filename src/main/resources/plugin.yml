@@ -40,6 +40,9 @@ permissions:
   smputil.players.uuid:
     description: Shows player UUIDs in the player list
     default: op
+  smputil.reload:
+    description: Allows re-reading config.yml
+    default: op
   smputil.suggest:
     description: Allows sending suggestions
     default: true

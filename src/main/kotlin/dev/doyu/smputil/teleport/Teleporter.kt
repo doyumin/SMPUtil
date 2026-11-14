@@ -18,7 +18,7 @@ import java.util.UUID
  * 집·스폰·텔레포트 요청이 함께 쓰는 이동. 대기 시간 동안 다른 블록으로 움직이면 취소한다(DESIGN 4장).
  * 시선만 돌리는 것은 움직임으로 치지 않는다.
  */
-class Teleporter(private val plugin: Plugin, private val warmup: Duration) : Listener {
+class Teleporter(private val plugin: Plugin, private val warmupSetting: () -> Duration) : Listener {
     private class Waiting(val task: BukkitTask, val origin: Location)
 
     private val waiting = mutableMapOf<UUID, Waiting>()
@@ -26,6 +26,7 @@ class Teleporter(private val plugin: Plugin, private val warmup: Duration) : Lis
     /** [destination]은 지금 위치를 복사해 넘긴다. 대기 중에 상대가 움직여도 요청 시점의 위치로 가게 하기 위해서다. */
     fun teleport(player: Player, destination: Location, arrivedMessage: Component) {
         waiting.remove(player.uniqueId)?.task?.cancel()
+        val warmup = warmupSetting()
         if (warmup.isZero) {
             go(player, destination, arrivedMessage)
             return
