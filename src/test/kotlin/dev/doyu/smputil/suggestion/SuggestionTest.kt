@@ -62,6 +62,18 @@ class SuggestionTest {
     }
 
     @Test
+    fun `cooldownLeft is known before typing anything`() {
+        val book = book()
+        assertEquals(null, book.cooldownLeft(alice))
+
+        book.add(alice, "Alice", "하나")
+        clock.now += Duration.ofSeconds(25)
+
+        assertEquals(Duration.ofSeconds(35), book.cooldownLeft(alice))
+        assertEquals(null, book.cooldownLeft(bob))
+    }
+
+    @Test
     fun `cooldown and ids continue after a restart`() {
         val saved = listOf(Suggestion(7, alice, "Alice", "예전 제안", clock.instant()))
         val book = book(saved)
