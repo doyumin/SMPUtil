@@ -21,6 +21,7 @@ import dev.doyu.smputil.suggestion.DiscordWebhook
 import dev.doyu.smputil.suggestion.SuggestCommand
 import dev.doyu.smputil.suggestion.SuggestionBook
 import dev.doyu.smputil.suggestion.SuggestionFile
+import dev.doyu.smputil.suggestion.SuggestionReminder
 import dev.doyu.smputil.teleport.SpawnCommand
 import dev.doyu.smputil.teleport.TeleportRequests
 import dev.doyu.smputil.teleport.Teleporter
@@ -73,6 +74,12 @@ class SMPUtilPlugin : JavaPlugin() {
             teleportRequests.sweepExpired()
             trades.sweepExpired()
         }, TICKS_PER_SECOND, TICKS_PER_SECOND)
+
+        settings.suggestion.reminderInterval?.let { interval ->
+            val reminder = SuggestionReminder(server)
+            val ticks = interval.seconds * TICKS_PER_SECOND
+            server.scheduler.runTaskTimer(this, { _ -> reminder.remind() }, ticks, ticks)
+        }
 
         lifecycleManager.registerEventHandler(LifecycleEvents.COMMANDS) { event ->
             val commands = event.registrar()

@@ -19,6 +19,8 @@ data class SmpSettings(
 data class SuggestionSettings(
     val maxLength: Int,
     val cooldown: Duration,
+    /** null이면 안내를 보내지 않는다. */
+    val reminderInterval: Duration?,
     /** null이면 디스코드 알림을 쓰지 않는다. */
     val discordWebhook: URI?,
 )
@@ -71,6 +73,8 @@ fun readSettings(config: ConfigurationSection): SmpSettings {
     require(suggestionMaxLength <= SUGGESTION_LENGTH_LIMIT) { "suggestion.max-length must be at most $SUGGESTION_LENGTH_LIMIT" }
     val suggestionCooldown = config.requireWholeNumber("suggestion.cooldown-seconds")
     require(suggestionCooldown >= 0) { "suggestion.cooldown-seconds must not be negative" }
+    val reminderMinutes = config.requireWholeNumber("suggestion.reminder-minutes")
+    require(reminderMinutes >= 0) { "suggestion.reminder-minutes must not be negative" }
     require(config.isString("suggestion.discord-webhook-url")) { "suggestion.discord-webhook-url must be text (empty to turn off)" }
     val webhookText = config.getString("suggestion.discord-webhook-url").orEmpty().trim()
     // 웹훅 주소는 비밀이라 틀렸을 때도 값을 오류 메시지에 싣지 않는다.
@@ -87,7 +91,7 @@ fun readSettings(config: ConfigurationSection): SmpSettings {
         tpaExpiry = Duration.ofSeconds(config.requirePositive("tpa.expire-seconds").toLong()),
         tradeExpiry = Duration.ofSeconds(config.requirePositive("trade.expire-seconds").toLong()),
         tradeMaxDistance = if (maxDistance == 0) null else maxDistance.toDouble(),
-        suggestion = SuggestionSettings(suggestionMaxLength, Duration.ofSeconds(suggestionCooldown.toLong()), webhook),
+        suggestion = SuggestionSettings(suggestionMaxLength, Duration.ofSeconds(suggestionCooldown.toLong()), if (reminderMinutes == 0) null else Duration.ofMinutes(reminderMinutes.toLong()), webhook),
     )
 }
 
