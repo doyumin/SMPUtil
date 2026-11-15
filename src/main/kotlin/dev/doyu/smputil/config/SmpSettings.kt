@@ -15,6 +15,14 @@ data class SmpSettings(
     val tradeMaxDistance: Double?,
     val suggestion: SuggestionSettings,
     val stash: StashSettings,
+    val find: FindSettings,
+)
+
+data class FindSettings(
+    /** 상자를 찾는 반경(블록). */
+    val radius: Int,
+    /** 표시가 남아 있는 시간. */
+    val highlight: Duration,
 )
 
 data class StashSettings(
@@ -45,6 +53,10 @@ data class HomeSettings(
 const val PROTOCOL_NAME_LIMIT = 16
 
 const val STASH_RADIUS_LIMIT = 32
+
+/** 표시 엔티티가 오래 남지 않게 한다. */
+const val FIND_RADIUS_LIMIT = 48
+const val FIND_HIGHLIGHT_LIMIT_SECONDS = 60
 
 /** Discord 임베드 설명의 상한(4096)보다 한참 작게 둔다. 제안은 짧은 글이어야 한다. */
 const val SUGGESTION_LENGTH_LIMIT = 1000
@@ -81,6 +93,11 @@ fun readSettings(config: ConfigurationSection): SmpSettings {
     // 반경이 크면 불러온 청크를 그만큼 훑는다. 한 번의 명령이 서버를 오래 잡지 않게 상한을 둔다.
     require(stashRadius <= STASH_RADIUS_LIMIT) { "stash.radius must be at most $STASH_RADIUS_LIMIT" }
 
+    val findRadius = config.requirePositive("find.radius")
+    require(findRadius <= FIND_RADIUS_LIMIT) { "find.radius must be at most $FIND_RADIUS_LIMIT" }
+    val findSeconds = config.requirePositive("find.highlight-seconds")
+    require(findSeconds <= FIND_HIGHLIGHT_LIMIT_SECONDS) { "find.highlight-seconds must be at most $FIND_HIGHLIGHT_LIMIT_SECONDS" }
+
     val suggestionMaxLength = config.requirePositive("suggestion.max-length")
     require(suggestionMaxLength <= SUGGESTION_LENGTH_LIMIT) { "suggestion.max-length must be at most $SUGGESTION_LENGTH_LIMIT" }
     val suggestionCooldown = config.requireWholeNumber("suggestion.cooldown-seconds")
@@ -105,6 +122,7 @@ fun readSettings(config: ConfigurationSection): SmpSettings {
         tradeMaxDistance = if (maxDistance == 0) null else maxDistance.toDouble(),
         suggestion = SuggestionSettings(suggestionMaxLength, Duration.ofSeconds(suggestionCooldown.toLong()), if (reminderMinutes == 0) null else Duration.ofMinutes(reminderMinutes.toLong()), webhook),
         stash = StashSettings(stashRadius),
+        find = FindSettings(findRadius, Duration.ofSeconds(findSeconds.toLong())),
     )
 }
 

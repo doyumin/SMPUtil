@@ -27,6 +27,8 @@ class SmpSettingsTest {
         assertEquals(Duration.ofSeconds(15), settings.tradeExpiry)
         assertNull(settings.tradeMaxDistance)
         assertEquals(10, settings.stash.radius)
+        assertEquals(20, settings.find.radius)
+        assertEquals(Duration.ofSeconds(10), settings.find.highlight)
         assertEquals(200, settings.suggestion.maxLength)
         assertEquals(Duration.ofSeconds(60), settings.suggestion.cooldown)
         assertEquals(Duration.ofMinutes(5), settings.suggestion.reminderInterval)
@@ -64,6 +66,10 @@ class SmpSettingsTest {
             "trade.max-distance" to -5,
             "stash.radius" to 0,
             "stash.radius" to 33,
+            "find.radius" to 0,
+            "find.radius" to 49,
+            "find.highlight-seconds" to 0,
+            "find.highlight-seconds" to 61,
             "suggestion.max-length" to 0,
             "suggestion.max-length" to 1001,
             "suggestion.cooldown-seconds" to -1,
