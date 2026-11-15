@@ -14,6 +14,12 @@ data class SmpSettings(
     /** null이면 거리 제한이 없다. */
     val tradeMaxDistance: Double?,
     val suggestion: SuggestionSettings,
+    val stash: StashSettings,
+)
+
+data class StashSettings(
+    /** 상자를 찾는 반경(블록). */
+    val radius: Int,
 )
 
 data class SuggestionSettings(
@@ -37,6 +43,8 @@ data class HomeSettings(
 
 /** 마인크래프트 프로토콜이 플레이어 이름에 허용하는 최대 길이(ByteBufCodecs.PLAYER_NAME = stringUtf8(16), Paper 26.3 서버 코드에서 확인). */
 const val PROTOCOL_NAME_LIMIT = 16
+
+const val STASH_RADIUS_LIMIT = 32
 
 /** Discord 임베드 설명의 상한(4096)보다 한참 작게 둔다. 제안은 짧은 글이어야 한다. */
 const val SUGGESTION_LENGTH_LIMIT = 1000
@@ -69,6 +77,10 @@ fun readSettings(config: ConfigurationSection): SmpSettings {
     val maxDistance = config.requireWholeNumber("trade.max-distance")
     require(maxDistance >= 0) { "trade.max-distance must not be negative" }
 
+    val stashRadius = config.requirePositive("stash.radius")
+    // 반경이 크면 불러온 청크를 그만큼 훑는다. 한 번의 명령이 서버를 오래 잡지 않게 상한을 둔다.
+    require(stashRadius <= STASH_RADIUS_LIMIT) { "stash.radius must be at most $STASH_RADIUS_LIMIT" }
+
     val suggestionMaxLength = config.requirePositive("suggestion.max-length")
     require(suggestionMaxLength <= SUGGESTION_LENGTH_LIMIT) { "suggestion.max-length must be at most $SUGGESTION_LENGTH_LIMIT" }
     val suggestionCooldown = config.requireWholeNumber("suggestion.cooldown-seconds")
@@ -92,6 +104,7 @@ fun readSettings(config: ConfigurationSection): SmpSettings {
         tradeExpiry = Duration.ofSeconds(config.requirePositive("trade.expire-seconds").toLong()),
         tradeMaxDistance = if (maxDistance == 0) null else maxDistance.toDouble(),
         suggestion = SuggestionSettings(suggestionMaxLength, Duration.ofSeconds(suggestionCooldown.toLong()), if (reminderMinutes == 0) null else Duration.ofMinutes(reminderMinutes.toLong()), webhook),
+        stash = StashSettings(stashRadius),
     )
 }
 

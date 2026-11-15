@@ -46,3 +46,6 @@ permissions:
   smputil.suggest:
     description: Allows sending suggestions
     default: true
+  smputil.stash:
+    description: Allows stashing items into nearby chests
+    default: true

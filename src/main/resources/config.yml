@@ -40,3 +40,7 @@ suggestion:
   # 이 주소를 아는 사람은 누구나 그 채널에 글을 쓸 수 있으므로 비밀이다: 저장소에는 절대 적지 말고,
   # 서버의 plugins/SMPUtil/config.yml 에만 적는다.
   discord-webhook-url: ""
+
+stash:
+  # /모으기가 상자를 찾는 반경(블록). 1~32. 클수록 멀리 있는 상자까지 채운다. 임시값.
+  radius: 10
