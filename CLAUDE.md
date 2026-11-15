@@ -100,6 +100,7 @@ Econet 저장소(master)의 배포 파이프라인과 같다. 구현은 `buildSr
 
 - 플러그인이 오류 없이 켜지고 꺼진다. 11개 명령어와 한글 별칭(`/접속자`, `/도전과제공유` 등)이 콘솔에서 실행된다.
 - `/syncadv on`이 `state.yml`에 저장된다.
+- `/smpreload`와 한글 별칭 `/설정리로드`가 콘솔에서 동작한다. 서버가 켜진 뒤 `config.yml`을 틀린 값(`home.max-homes: 0`)으로 바꾸고 부르면 "keeping the previous settings: home.max-homes must be at least 1"로 거절하고 이전 값을 유지한다. 시작할 때 틀린 값이면 플러그인이 켜지지 않는다(명령어도 없음).
 - 클라이언트 접속 테스트는 아직 못 했다(이름표·탭 목록·거래 화면). mineflayer(minecraft-data)가 26.1까지만 지원한다.
 
 ### Paper 26.3 서버 코드에서 확인

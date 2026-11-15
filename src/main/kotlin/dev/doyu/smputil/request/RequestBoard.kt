@@ -26,7 +26,7 @@ sealed interface TakeResult {
  * 한 대상에게 대기 중인 요청은 하나, 한 요청자가 보낸 대기 요청도 하나다.
  * 만료는 주입한 [clock]으로만 판정한다. 시간이 걸리는 규칙을 테스트에서 고정하기 위해서다.
  */
-class RequestBoard(private val clock: Clock, private val lifetime: Duration) {
+class RequestBoard(private val clock: Clock, private val lifetime: () -> Duration) {
     private val byTarget = mutableMapOf<UUID, PendingRequest>()
 
     fun send(from: UUID, to: UUID): SendResult {
@@ -36,7 +36,7 @@ class RequestBoard(private val clock: Clock, private val lifetime: Duration) {
         if (existing != null && existing.from != from) return SendResult.TargetBusy(existing)
         val replaced = byTarget.values.firstOrNull { it.from == from && it.to != to }
         if (replaced != null) byTarget.remove(replaced.to)
-        val request = PendingRequest(from, to, clock.instant().plus(lifetime))
+        val request = PendingRequest(from, to, clock.instant().plus(lifetime()))
         byTarget[to] = request
         return SendResult.Sent(request, replaced)
     }
