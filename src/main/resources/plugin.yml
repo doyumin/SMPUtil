@@ -49,3 +49,9 @@ permissions:
   smputil.stash:
     description: Allows stashing items into nearby chests
     default: true
+  smputil.sort:
+    description: Allows sorting a chest or your inventory
+    default: true
+  smputil.find:
+    description: Allows finding nearby chests that hold an item
+    default: true

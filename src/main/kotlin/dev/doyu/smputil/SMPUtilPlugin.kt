@@ -19,7 +19,12 @@ import dev.doyu.smputil.nickname.Nicknames
 import dev.doyu.smputil.players.PlayerLookup
 import dev.doyu.smputil.players.PlayersCommand
 import dev.doyu.smputil.request.RequestBoard
+import dev.doyu.smputil.stash.ChestFinder
 import dev.doyu.smputil.stash.ChestStash
+import dev.doyu.smputil.stash.FindCommand
+import dev.doyu.smputil.stash.InventorySorter
+import dev.doyu.smputil.stash.NearbyChests
+import dev.doyu.smputil.stash.SortCommand
 import dev.doyu.smputil.stash.StashCommand
 import dev.doyu.smputil.suggestion.DiscordWebhook
 import dev.doyu.smputil.suggestion.SuggestCommand
@@ -43,6 +48,7 @@ class SMPUtilPlugin : JavaPlugin() {
     private var trades: Trades? = null
     private var nicknameChannels: NicknameChannels? = null
     private var reminderTask: BukkitTask? = null
+    private var chestFinder: ChestFinder? = null
 
     override fun onEnable() {
         saveDefaultConfig()
@@ -77,6 +83,10 @@ class SMPUtilPlugin : JavaPlugin() {
         server.pluginManager.registerEvents(teleportRequests, this)
         server.pluginManager.registerEvents(trades, this)
         server.pluginManager.registerEvents(advancementSync, this)
+        val nearbyChests = NearbyChests()
+        val finder = ChestFinder(this, nearbyChests, { current.value.find.radius }, { current.value.find.highlight.seconds.toInt() })
+        chestFinder = finder
+        server.pluginManager.registerEvents(finder, this)
         server.scheduler.runTaskTimer(this, { _ ->
             teleportRequests.sweepExpired()
             trades.sweepExpired()
@@ -104,7 +114,9 @@ class SMPUtilPlugin : JavaPlugin() {
             commands.register("syncadv", "도전과제 공유 상태를 보거나 켜고 끕니다.", listOf("도전과제공유"), SyncAdvancementCommand(advancementSync))
             commands.register("players", "접속자 목록을 봅니다.", listOf("접속자"), PlayersCommand(server, nicknames))
             commands.register("suggest", "서버에 바라는 것을 제안합니다.", listOf("제안"), SuggestCommand(this, suggestionBook, suggestionFile, discordWebhook, nicknames, { current.value.suggestion.maxLength }, logger))
-            commands.register("stash", "근처 상자 중 같은 아이템이 든 곳에 아이템을 모읍니다.", listOf("모으기"), StashCommand(ChestStash { current.value.stash.radius }))
+            commands.register("stash", "근처 상자 중 같은 아이템이 든 곳에 아이템을 모읍니다.", listOf("모으기"), StashCommand(ChestStash(nearbyChests) { current.value.stash.radius }))
+            commands.register("sort", "바라보는 상자나 내 인벤토리를 정렬합니다.", listOf("정렬"), SortCommand(nearbyChests, InventorySorter()))
+            commands.register("find", "근처 상자 중 그 아이템이 든 곳을 표시합니다.", listOf("찾기"), FindCommand(finder))
             commands.register("smpreload", "config.yml만 다시 읽습니다.", listOf("설정리로드"), ReloadConfigCommand(reloadSettings, logger))
         }
     }
@@ -122,6 +134,8 @@ class SMPUtilPlugin : JavaPlugin() {
     override fun onDisable() {
         // 플레이어 저장보다 먼저 일어나므로, 여기서 돌려준 아이템은 저장된다.
         trades?.endAll()
+        // 표시용 엔티티가 월드에 남지 않게 한다.
+        chestFinder?.clearAll()
         val channels = nicknameChannels ?: return
         for (player in server.onlinePlayers) channels.detach(player)
     }
