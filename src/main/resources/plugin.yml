@@ -40,6 +40,12 @@ permissions:
   smputil.players.uuid:
     description: Shows player UUIDs in the player list
     default: op
+  smputil.reload:
+    description: Allows re-reading config.yml
+    default: op
   smputil.suggest:
     description: Allows sending suggestions
+    default: true
+  smputil.stash:
+    description: Allows stashing items into nearby chests
     default: true

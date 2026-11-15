@@ -18,7 +18,7 @@ private const val RESET = "reset"
  */
 class NickCommand(
     private val nicknames: Nicknames,
-    private val rules: NicknameRules,
+    private val currentRules: () -> NicknameRules,
     private val lookup: PlayerLookup,
 ) : BasicCommand {
     override fun execute(source: CommandSourceStack, args: Array<String>) {
@@ -59,7 +59,7 @@ class NickCommand(
             if (!self) target.sendMessage(Component.text("닉네임이 지워졌습니다.", NamedTextColor.YELLOW))
             return
         }
-        when (val check = rules.check(requested, nicknames.namesTakenBesides(target.uniqueId))) {
+        when (val check = currentRules().check(requested, nicknames.namesTakenBesides(target.uniqueId))) {
             is NicknameCheck.Accepted -> {
                 nicknames.set(target, requested)
                 sender.sendMessage(Component.text(if (self) "닉네임을 ${requested}(으)로 바꿨습니다." else "${target.name}님의 닉네임을 ${requested}(으)로 바꿨습니다.", NamedTextColor.GREEN))

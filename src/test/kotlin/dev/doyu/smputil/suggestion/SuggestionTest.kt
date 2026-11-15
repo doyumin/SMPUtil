@@ -24,7 +24,7 @@ class SuggestionTest {
     private val alice = UUID.randomUUID()
     private val bob = UUID.randomUUID()
 
-    private fun book(initial: List<Suggestion> = emptyList()) = SuggestionBook(initial, clock, maxLength = 20, cooldown = Duration.ofSeconds(60))
+    private fun book(initial: List<Suggestion> = emptyList()) = SuggestionBook(initial, clock, maxLength = { 20 }, cooldown = { Duration.ofSeconds(60) })
 
     @Test
     fun `accepted suggestions get increasing ids and tidy whitespace`() {
