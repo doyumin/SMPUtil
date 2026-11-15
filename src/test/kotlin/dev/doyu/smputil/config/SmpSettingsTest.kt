@@ -26,6 +26,7 @@ class SmpSettingsTest {
         assertEquals(Duration.ofSeconds(15), settings.tpaExpiry)
         assertEquals(Duration.ofSeconds(15), settings.tradeExpiry)
         assertNull(settings.tradeMaxDistance)
+        assertEquals(10, settings.stash.radius)
         assertEquals(200, settings.suggestion.maxLength)
         assertEquals(Duration.ofSeconds(60), settings.suggestion.cooldown)
         assertEquals(Duration.ofMinutes(5), settings.suggestion.reminderInterval)
@@ -61,6 +62,8 @@ class SmpSettingsTest {
             "tpa.expire-seconds" to 0,
             "trade.expire-seconds" to "soon",
             "trade.max-distance" to -5,
+            "stash.radius" to 0,
+            "stash.radius" to 33,
             "suggestion.max-length" to 0,
             "suggestion.max-length" to 1001,
             "suggestion.cooldown-seconds" to -1,

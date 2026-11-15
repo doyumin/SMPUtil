@@ -19,6 +19,8 @@ import dev.doyu.smputil.nickname.Nicknames
 import dev.doyu.smputil.players.PlayerLookup
 import dev.doyu.smputil.players.PlayersCommand
 import dev.doyu.smputil.request.RequestBoard
+import dev.doyu.smputil.stash.ChestStash
+import dev.doyu.smputil.stash.StashCommand
 import dev.doyu.smputil.suggestion.DiscordWebhook
 import dev.doyu.smputil.suggestion.SuggestCommand
 import dev.doyu.smputil.suggestion.SuggestionBook
@@ -102,6 +104,7 @@ class SMPUtilPlugin : JavaPlugin() {
             commands.register("syncadv", "도전과제 공유 상태를 보거나 켜고 끕니다.", listOf("도전과제공유"), SyncAdvancementCommand(advancementSync))
             commands.register("players", "접속자 목록을 봅니다.", listOf("접속자"), PlayersCommand(server, nicknames))
             commands.register("suggest", "서버에 바라는 것을 제안합니다.", listOf("제안"), SuggestCommand(this, suggestionBook, suggestionFile, discordWebhook, nicknames, { current.value.suggestion.maxLength }, logger))
+            commands.register("stash", "근처 상자 중 같은 아이템이 든 곳에 아이템을 모읍니다.", listOf("모으기"), StashCommand(ChestStash { current.value.stash.radius }))
             commands.register("smpreload", "config.yml만 다시 읽습니다.", listOf("설정리로드"), ReloadConfigCommand(reloadSettings, logger))
         }
     }
