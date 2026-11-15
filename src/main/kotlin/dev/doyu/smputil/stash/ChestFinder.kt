@@ -3,6 +3,7 @@ package dev.doyu.smputil.stash
 import org.bukkit.Color
 import org.bukkit.Location
 import org.bukkit.Material
+import org.bukkit.block.data.BlockData
 import org.bukkit.entity.BlockDisplay
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -51,8 +52,15 @@ class ChestFinder(
         return FindResult.Found(holding.size, holding.sumOf { it.second }, nearest)
     }
 
-    private fun highlight(player: Player, at: Location, data: org.bukkit.block.data.BlockData): BlockDisplay {
-        val display = at.world.spawn(at, BlockDisplay::class.java) { display ->
+    private fun highlight(player: Player, at: Location, data: BlockData): BlockDisplay {
+        val display = spawnOutline(at, data)
+        player.showEntity(plugin, display)
+        return display
+    }
+
+    /** 아무에게도 보이지 않는 상태로 만든다. 보여 줄 사람은 호출한 쪽이 정한다. */
+    fun spawnOutline(at: Location, data: BlockData): BlockDisplay =
+        at.world.spawn(at, BlockDisplay::class.java) { display ->
             display.block = data
             display.isGlowing = true
             display.glowColorOverride = Color.YELLOW
@@ -61,9 +69,6 @@ class ChestFinder(
             display.isVisibleByDefault = false
             display.transformation = Transformation(Vector3f(-GROW, -GROW, -GROW), AxisAngle4f(), Vector3f(1 + 2 * GROW, 1 + 2 * GROW, 1 + 2 * GROW), AxisAngle4f())
         }
-        player.showEntity(plugin, display)
-        return display
-    }
 
     fun clear(player: UUID) {
         val highlight = active.remove(player) ?: return
