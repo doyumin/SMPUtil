@@ -28,6 +28,7 @@ class SmpSettingsTest {
         assertNull(settings.tradeMaxDistance)
         assertEquals(200, settings.suggestion.maxLength)
         assertEquals(Duration.ofSeconds(60), settings.suggestion.cooldown)
+        assertEquals(Duration.ofMinutes(5), settings.suggestion.reminderInterval)
         assertNull(settings.suggestion.discordWebhook)
     }
 
@@ -63,6 +64,7 @@ class SmpSettingsTest {
             "suggestion.max-length" to 0,
             "suggestion.max-length" to 1001,
             "suggestion.cooldown-seconds" to -1,
+            "suggestion.reminder-minutes" to -1,
             "suggestion.discord-webhook-url" to "https://example.com/hook",
         )
         for ((path, value) in cases) {

@@ -40,16 +40,17 @@ class SuggestionBook(
         if (text.isEmpty()) return SuggestResult.Empty
         if (text.length > maxLength) return SuggestResult.TooLong(maxLength)
 
-        val now = clock.instant()
-        val last = suggestions.lastOrNull { it.author == author }
-        if (last != null) {
-            val remaining = cooldown - Duration.between(last.createdAt, now)
-            if (remaining.isPositive) return SuggestResult.Cooldown(remaining)
-        }
+        cooldownLeft(author)?.let { return SuggestResult.Cooldown(it) }
 
-        val suggestion = Suggestion(nextId++, author, authorName, text, now)
+        val suggestion = Suggestion(nextId++, author, authorName, text, clock.instant())
         suggestions += suggestion
         return SuggestResult.Accepted(suggestion)
+    }
+
+    /** 입력창을 열기 전에 확인해, 길게 써 놓고 거절당하는 일이 없게 한다. */
+    fun cooldownLeft(author: UUID): Duration? {
+        val last = suggestions.lastOrNull { it.author == author } ?: return null
+        return (cooldown - Duration.between(last.createdAt, clock.instant())).takeIf { it.isPositive }
     }
 
     fun snapshot(): List<Suggestion> = suggestions.toList()
